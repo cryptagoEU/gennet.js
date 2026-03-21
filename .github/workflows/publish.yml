@@ -1,18 +1,19 @@
-name: Publish to npm
+name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - main
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  publish:
+  release:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
+      pull-requests: write
       id-token: write
 
     steps:
@@ -26,7 +27,15 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+      - run: npm test
       - run: npm run check
-      - run: npm publish --provenance --access public
+
+      - name: Create Release PR or Publish
+        uses: changesets/action@v1
+        with:
+          publish: npm publish --provenance --access public
+          title: 'chore: release gennet.js'
+          commit: 'chore: release gennet.js'
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -27,6 +27,7 @@
     "dev": "unbuild --stub",
     "test": "vitest",
     "lint": "eslint src/",
+    "changeset": "changeset",
     "check": "publint && attw --pack",
     "prepublishOnly": "npm run build && npm run check"
   },
@@ -52,6 +53,8 @@
   "homepage": "https://github.com/cryptagoEU/gennet.js#readme",
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.0",
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "publint": "^0.3.0",
     "typescript": "^5.4.0",
     "unbuild": "^3.0.0",

@@ -15,6 +15,8 @@ Client library for [GenNet](https://github.com/cryptagoEU/gennet.js) — interac
 - WebSocket & HTTP providers
 - Full TypeScript support (ESM + CJS)
 - Subscriptions (logs, messages, mempool)
+- Auto-reconnect with exponential backoff
+- Connection events (connect, disconnect, error)
 
 ## Installation
 
@@ -53,12 +55,20 @@ const gennet = new GenNet('ws://localhost:18789');
 const gennet = new GenNet('http://localhost:18790');
 ```
 
-You can also pass a custom provider:
+You can also pass a custom provider with options:
 
 ```typescript
 import { GenNet, WebSocketProvider } from 'gennet.js';
 
-const provider = new WebSocketProvider('ws://localhost:18789');
+const provider = new WebSocketProvider('ws://localhost:18789', {
+  timeout: 10_000,
+  reconnect: {
+    enabled: true,      // default: true
+    maxRetries: 10,     // default: 5
+    delay: 2000,        // default: 1000ms (doubles each attempt)
+    maxDelay: 60_000,   // default: 30000ms
+  },
+});
 const gennet = new GenNet(provider);
 ```
 
@@ -122,6 +132,26 @@ For methods not covered by the namespaces:
 ```typescript
 const result = await gennet.request('custom_method', { key: 'value' });
 ```
+
+## Events
+
+The WebSocket provider emits connection lifecycle events:
+
+```typescript
+gennet.on('connect', () => {
+  console.log('Connected to GenNet node');
+});
+
+gennet.on('disconnect', () => {
+  console.log('Disconnected — reconnecting...');
+});
+
+gennet.on('error', (err) => {
+  console.error('Connection error:', err.message);
+});
+```
+
+Auto-reconnect is enabled by default. After a disconnect, the provider reconnects with exponential backoff. Call `gennet.disconnect()` to stop reconnecting.
 
 ## Error Handling
 

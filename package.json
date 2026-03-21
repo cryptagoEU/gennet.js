@@ -1,6 +1,6 @@
 {
   "name": "gennet.js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Client Library for GenNet — interact with GenNet nodes via JSON-RPC",
   "type": "module",
   "sideEffects": false,

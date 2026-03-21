@@ -1,0 +1,136 @@
+# gennet.js
+
+Client library for [GenNet](https://github.com/cryptagoEU/gennet.js) — interact with GenNet nodes via JSON-RPC.
+
+- Zero runtime dependencies
+- Browser + Node.js compatible
+- WebSocket & HTTP providers
+- Full TypeScript support (ESM + CJS)
+- Subscriptions (logs, messages, mempool)
+
+## Installation
+
+```bash
+npm install gennet.js
+```
+
+## Quick Start
+
+```typescript
+import { GenNet } from 'gennet.js';
+
+const gennet = new GenNet('ws://localhost:18789');
+await gennet.connect();
+
+// Node info
+const info = await gennet.admin.nodeInfo();
+console.log(info.address, info.peers);
+
+// Send encrypted message
+await gennet.net.send('0xRecipientAddress', 'Hello!');
+
+// Disconnect
+gennet.disconnect();
+```
+
+## Providers
+
+gennet.js auto-detects the provider from the URL:
+
+```typescript
+// WebSocket (supports subscriptions)
+const gennet = new GenNet('ws://localhost:18789');
+
+// HTTP (stateless, no subscriptions)
+const gennet = new GenNet('http://localhost:18790');
+```
+
+You can also pass a custom provider:
+
+```typescript
+import { GenNet, WebSocketProvider } from 'gennet.js';
+
+const provider = new WebSocketProvider('ws://localhost:18789');
+const gennet = new GenNet(provider);
+```
+
+## API
+
+### admin
+
+```typescript
+await gennet.admin.nodeInfo();                // Node status, peers, uptime, modules
+await gennet.admin.shutdown();                // Shutdown the gateway
+await gennet.admin.modules();                 // List all modules and their state
+await gennet.admin.startModule('net');        // Start a module
+await gennet.admin.stopModule('net');         // Stop a module
+```
+
+### net
+
+```typescript
+await gennet.net.peers();                                   // List known peers
+await gennet.net.connect('/ip4/127.0.0.1/tcp/9000/p2p/…');  // Connect to peer
+await gennet.net.send('0x…', 'Hello');                       // Send encrypted message
+await gennet.net.peerAgent('0x…', 'What is 2+2?');           // Remote agent execution
+```
+
+### personal
+
+```typescript
+await gennet.personal.newIdentity('password');   // Create new identity
+await gennet.personal.listIdentities();          // List keystore identities
+```
+
+### agent
+
+```typescript
+await gennet.agent.run('What is 2+2?');   // Run local agent prompt
+```
+
+### mempool
+
+```typescript
+await gennet.mempool.broadcast('Hello network!');   // Broadcast via GossipSub
+```
+
+### Subscriptions
+
+Subscriptions are available over WebSocket. Topics: `logs`, `messages`, `mempool`.
+
+```typescript
+const sub = await gennet.subscribe('messages', (data) => {
+  console.log('New message:', data);
+});
+
+// Unsubscribe
+await sub.unsubscribe();
+```
+
+### Raw RPC
+
+For methods not covered by the namespaces:
+
+```typescript
+const result = await gennet.request('custom_method', { key: 'value' });
+```
+
+## Error Handling
+
+RPC errors throw a typed `RpcError`:
+
+```typescript
+import { RpcError } from 'gennet.js';
+
+try {
+  await gennet.net.send('0xInvalid', 'Hello');
+} catch (err) {
+  if (err instanceof RpcError) {
+    console.error(err.message, err.code);
+  }
+}
+```
+
+## License
+
+MIT

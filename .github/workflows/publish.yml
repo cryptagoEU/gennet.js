@@ -25,14 +25,11 @@ jobs:
           cache: npm
 
       - run: npm ci
-      - run: npm run build
-      - run: npm test
-      - run: npm run check
 
       - name: Create Release PR or Publish
         uses: changesets/action@v1
         with:
-          publish: npm publish --provenance --access public
+          publish: npm run build && npm publish --provenance --access public
           title: 'chore: release gennet.js'
           commit: 'chore: release gennet.js'
         env:

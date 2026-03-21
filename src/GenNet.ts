@@ -1,4 +1,4 @@
-import type {JsonRpcNotification, Provider, Subscription, SubscriptionTopic} from './types.js';
+import type {JsonRpcNotification, Provider, ProviderEvent, ProviderEventListener, Subscription, SubscriptionTopic} from './types.js';
 import {HttpProvider} from './providers/HttpProvider.js';
 import {WebSocketProvider} from './providers/WebSocketProvider.js';
 import {Admin} from './namespaces/Admin.js';
@@ -93,6 +93,16 @@ export class GenNet {
                 return await this.provider.request('gennet_unsubscribe', [subId]) as boolean;
             },
         };
+    }
+
+    /** Event-Listener registrieren (connect, disconnect, error). */
+    on<E extends ProviderEvent>(event: E, listener: ProviderEventListener<E>): void {
+        this.provider.on(event, listener);
+    }
+
+    /** Event-Listener entfernen. */
+    off<E extends ProviderEvent>(event: E, listener: ProviderEventListener<E>): void {
+        this.provider.off(event, listener);
     }
 
     /** Raw JSON-RPC Request (für erweiterte Nutzung). */

@@ -15,6 +15,9 @@ export {Mempool} from './namespaces/Mempool.js';
 // Types
 export type {
     Provider,
+    ProviderEvent,
+    ProviderEventListener,
+    ReconnectOptions,
     JsonRpcRequest,
     JsonRpcSuccessResponse,
     JsonRpcErrorResponse,

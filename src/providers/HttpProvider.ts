@@ -1,4 +1,4 @@
-import type {JsonRpcNotification, JsonRpcResponse, JsonRpcErrorResponse, Provider} from '../types.js';
+import type {JsonRpcResponse, JsonRpcErrorResponse, Provider, ProviderEvent, ProviderEventListener} from '../types.js';
 import {RpcError} from '../types.js';
 
 let requestId = 0;
@@ -42,8 +42,8 @@ export class HttpProvider implements Provider {
         return json.result;
     }
 
-    // HTTP unterstützt keine Push-Notifications
-    on(_event: 'notification', _listener: (notification: JsonRpcNotification) => void): void {}
-    off(_event: 'notification', _listener: (notification: JsonRpcNotification) => void): void {}
+    // HTTP unterstützt keine Events
+    on<E extends ProviderEvent>(_event: E, _listener: ProviderEventListener<E>): void {}
+    off<E extends ProviderEvent>(_event: E, _listener: ProviderEventListener<E>): void {}
     disconnect(): void {}
 }

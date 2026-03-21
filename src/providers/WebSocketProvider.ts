@@ -1,7 +1,22 @@
-import type {JsonRpcNotification, JsonRpcResponse, JsonRpcErrorResponse, Provider} from '../types.js';
+import type {
+    JsonRpcNotification,
+    JsonRpcResponse,
+    JsonRpcErrorResponse,
+    Provider,
+    ProviderEvent,
+    ProviderEventListener,
+    ReconnectOptions,
+} from '../types.js';
 import {RpcError} from '../types.js';
 
 const DEFAULT_TIMEOUT = 30_000;
+
+const DEFAULT_RECONNECT: Required<ReconnectOptions> = {
+    enabled: true,
+    maxRetries: 5,
+    delay: 1000,
+    maxDelay: 30_000,
+};
 
 interface PendingRequest {
     resolve: (value: unknown) => void;
@@ -11,20 +26,30 @@ interface PendingRequest {
 
 /**
  * WebSocket Provider — nutzt native WebSocket API (Browser + Node 22+).
- * Unterstützt Subscriptions via Push-Notifications.
+ * Unterstützt Subscriptions via Push-Notifications und Auto-Reconnect.
  */
 export class WebSocketProvider implements Provider {
     private readonly url: string;
     private readonly timeout: number;
+    private readonly reconnectOpts: Required<ReconnectOptions>;
     private ws: WebSocket | null = null;
     private requestId = 0;
+    private reconnectAttempts = 0;
+    private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    private manualDisconnect = false;
     private pending = new Map<string | number, PendingRequest>();
-    private listeners = new Set<(notification: JsonRpcNotification) => void>();
+
+    // Typisierte Event-Listener
+    private notificationListeners = new Set<(notification: JsonRpcNotification) => void>();
+    private connectListeners = new Set<() => void>();
+    private disconnectListeners = new Set<() => void>();
+    private errorListeners = new Set<(error: Error) => void>();
     private connectPromise: Promise<void> | null = null;
 
-    constructor(url: string, timeout = DEFAULT_TIMEOUT) {
+    constructor(url: string, options?: { timeout?: number; reconnect?: ReconnectOptions }) {
         this.url = url;
-        this.timeout = timeout;
+        this.timeout = options?.timeout ?? DEFAULT_TIMEOUT;
+        this.reconnectOpts = {...DEFAULT_RECONNECT, ...options?.reconnect};
     }
 
     get connected(): boolean {
@@ -33,21 +58,25 @@ export class WebSocketProvider implements Provider {
 
     async connect(): Promise<void> {
         if (this.connected) return;
-
-        // Verhindert doppelte connect()-Aufrufe
         if (this.connectPromise) return this.connectPromise;
+
+        this.manualDisconnect = false;
 
         this.connectPromise = new Promise<void>((resolve, reject) => {
             this.ws = new WebSocket(this.url);
 
             this.ws.onopen = () => {
                 this.connectPromise = null;
+                this.reconnectAttempts = 0;
+                this.emit('connect');
                 resolve();
             };
 
             this.ws.onerror = (ev) => {
                 this.connectPromise = null;
-                reject(new Error(`WebSocket-Verbindung fehlgeschlagen: ${this.url} (${ev})`));
+                const error = new Error(`WebSocket-Verbindung fehlgeschlagen: ${this.url} (${ev})`);
+                this.emit('error', error);
+                reject(error);
             };
 
             this.ws.onmessage = (ev) => {
@@ -56,11 +85,20 @@ export class WebSocketProvider implements Provider {
 
             this.ws.onclose = () => {
                 this.connectPromise = null;
+                this.ws = null;
+
                 // Alle offenen Requests ablehnen
                 for (const [id, req] of this.pending) {
                     clearTimeout(req.timer);
                     req.reject(new Error('WebSocket-Verbindung geschlossen'));
                     this.pending.delete(id);
+                }
+
+                this.emit('disconnect');
+
+                // Auto-Reconnect wenn nicht manuell getrennt
+                if (!this.manualDisconnect && this.reconnectOpts.enabled) {
+                    this.scheduleReconnect();
                 }
             };
         });
@@ -87,15 +125,20 @@ export class WebSocketProvider implements Provider {
         });
     }
 
-    on(_event: 'notification', listener: (notification: JsonRpcNotification) => void): void {
-        this.listeners.add(listener);
+    on<E extends ProviderEvent>(event: E, listener: ProviderEventListener<E>): void {
+        this.getListenerSet(event).add(listener as never);
     }
 
-    off(_event: 'notification', listener: (notification: JsonRpcNotification) => void): void {
-        this.listeners.delete(listener);
+    off<E extends ProviderEvent>(event: E, listener: ProviderEventListener<E>): void {
+        this.getListenerSet(event).delete(listener as never);
     }
 
     disconnect(): void {
+        this.manualDisconnect = true;
+        if (this.reconnectTimer) {
+            clearTimeout(this.reconnectTimer);
+            this.reconnectTimer = null;
+        }
         if (this.ws) {
             this.ws.close();
             this.ws = null;
@@ -104,12 +147,63 @@ export class WebSocketProvider implements Provider {
 
     // ── Private ────────────────────────────────────────────────
 
+    private scheduleReconnect(): void {
+        if (this.reconnectAttempts >= this.reconnectOpts.maxRetries) {
+            this.emit('error', new Error(
+                `Reconnect fehlgeschlagen nach ${this.reconnectOpts.maxRetries} Versuchen`,
+            ));
+            return;
+        }
+
+        const delay = Math.min(
+            this.reconnectOpts.delay * Math.pow(2, this.reconnectAttempts),
+            this.reconnectOpts.maxDelay,
+        );
+        this.reconnectAttempts++;
+
+        this.reconnectTimer = setTimeout(() => {
+            this.reconnectTimer = null;
+            this.connect().catch((err: unknown) => {
+                this.emit('error', err instanceof Error ? err : new Error(String(err)));
+            });
+        }, delay);
+    }
+
+    private emit(event: 'connect' | 'disconnect'): void;
+    private emit(event: 'error', error: Error): void;
+    private emit(event: 'notification', notification: JsonRpcNotification): void;
+    private emit(event: ProviderEvent, data?: unknown): void {
+        switch (event) {
+            case 'connect':
+                for (const l of this.connectListeners) l();
+                break;
+            case 'disconnect':
+                for (const l of this.disconnectListeners) l();
+                break;
+            case 'error':
+                for (const l of this.errorListeners) l(data as Error);
+                break;
+            case 'notification':
+                for (const l of this.notificationListeners) l(data as JsonRpcNotification);
+                break;
+        }
+    }
+
+    private getListenerSet(event: ProviderEvent): Set<(...args: never[]) => void> {
+        switch (event) {
+            case 'notification': return this.notificationListeners as Set<(...args: never[]) => void>;
+            case 'connect': return this.connectListeners as Set<(...args: never[]) => void>;
+            case 'disconnect': return this.disconnectListeners as Set<(...args: never[]) => void>;
+            case 'error': return this.errorListeners as Set<(...args: never[]) => void>;
+        }
+    }
+
     private handleMessage(raw: string): void {
         let msg: Record<string, unknown>;
         try {
             msg = JSON.parse(raw) as Record<string, unknown>;
         } catch {
-            return; // Ungültige Nachricht ignorieren
+            return;
         }
 
         // JSON-RPC Response (hat id + result oder error)
@@ -132,10 +226,7 @@ export class WebSocketProvider implements Provider {
 
         // JSON-RPC Notification (kein id, hat method) → Listener
         if ('method' in msg && 'params' in msg) {
-            const notification = msg as unknown as JsonRpcNotification;
-            for (const listener of this.listeners) {
-                listener(notification);
-            }
+            this.emit('notification', msg as unknown as JsonRpcNotification);
         }
     }
 }

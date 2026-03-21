@@ -100,17 +100,39 @@ export interface Subscription {
 
 // ── Provider ────────────────────────────────────────────────────
 
+export type ProviderEvent = 'notification' | 'connect' | 'disconnect' | 'error';
+
+export type ProviderEventListener<E extends ProviderEvent> =
+    E extends 'notification' ? (notification: JsonRpcNotification) => void :
+    E extends 'connect' ? () => void :
+    E extends 'disconnect' ? () => void :
+    E extends 'error' ? (error: Error) => void :
+    never;
+
 export interface Provider {
     /** JSON-RPC Request senden und auf Response warten. */
     request(method: string, params?: Record<string, unknown> | unknown[]): Promise<unknown>;
-    /** Listener für Push-Notifications (Subscriptions). */
-    on(event: 'notification', listener: (notification: JsonRpcNotification) => void): void;
-    /** Listener entfernen. */
-    off(event: 'notification', listener: (notification: JsonRpcNotification) => void): void;
+    /** Event-Listener registrieren. */
+    on<E extends ProviderEvent>(event: E, listener: ProviderEventListener<E>): void;
+    /** Event-Listener entfernen. */
+    off<E extends ProviderEvent>(event: E, listener: ProviderEventListener<E>): void;
     /** Verbindung schließen. */
     disconnect(): void;
     /** Verbindung herstellen (bei WebSocket). */
     connect?(): Promise<void>;
     /** Ob eine aktive Verbindung besteht. */
     readonly connected: boolean;
+}
+
+// ── Reconnect Options ───────────────────────────────────────────
+
+export interface ReconnectOptions {
+    /** Auto-Reconnect aktivieren. Default: true */
+    enabled?: boolean;
+    /** Maximale Anzahl Reconnect-Versuche. Default: 5 */
+    maxRetries?: number;
+    /** Initiale Wartezeit in ms (verdoppelt sich pro Versuch). Default: 1000 */
+    delay?: number;
+    /** Maximale Wartezeit in ms. Default: 30000 */
+    maxDelay?: number;
 }

@@ -1,5 +1,13 @@
 # gennet.js
 
+[![npm version](https://img.shields.io/npm/v/gennet.js)](https://www.npmjs.com/package/gennet.js)
+[![npm downloads](https://img.shields.io/npm/dm/gennet.js)](https://www.npmjs.com/package/gennet.js)
+[![CI](https://img.shields.io/github/actions/workflow/status/cryptagoEU/gennet.js/ci.yml?label=CI)](https://github.com/cryptagoEU/gennet.js/actions/workflows/ci.yml)
+[![license](https://img.shields.io/npm/l/gennet.js)](https://github.com/cryptagoEU/gennet.js/blob/main/LICENSE)
+
+[![ES Version](https://img.shields.io/badge/ES-2022-yellow)](https://github.com/cryptagoEU/gennet.js)
+[![Node Version](https://img.shields.io/badge/node-≥22-green)](https://github.com/cryptagoEU/gennet.js)
+
 Client library for [GenNet](https://github.com/cryptagoEU/gennet.js) — interact with GenNet nodes via JSON-RPC.
 
 - Zero runtime dependencies

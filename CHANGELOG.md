@@ -1,5 +1,11 @@
 # gennet.js
 
+## 0.2.2
+
+### Patch Changes
+
+- [`18c079a`](https://github.com/cryptagoEU/gennet.js/commit/18c079aa201a25bc2b2182463bd43d9f8be76322) Thanks [@garbera93](https://github.com/garbera93)! - Add TransportInfo type, extend NodeInfo with ws/http/ipc transport fields
+
 ## 0.2.1
 
 ### Patch Changes

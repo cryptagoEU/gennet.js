@@ -52,6 +52,14 @@ export interface ModuleInfo {
     status?: string;
 }
 
+export interface TransportInfo {
+    enabled: boolean;
+    host?: string;
+    port?: number;
+    api: string[];
+    origins?: string[];
+}
+
 export interface NodeInfo {
     state: GatewayState;
     peerId: string | null;
@@ -66,6 +74,9 @@ export interface NodeInfo {
     listenPort: number;
     datadir: string;
     modules: ModuleInfo[];
+    ws: TransportInfo;
+    http: TransportInfo;
+    ipc: boolean;
 }
 
 export interface PeerInfo {

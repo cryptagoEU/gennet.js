@@ -24,6 +24,7 @@ export type {
     JsonRpcResponse,
     JsonRpcNotification,
     NodeInfo,
+    TransportInfo,
     ModuleInfo,
     PeerInfo,
     AgentResult,

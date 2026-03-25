@@ -1,7 +1,6 @@
 import {describe, it, expect} from 'vitest';
 import {GenNet} from '../src/GenNet.js';
-import {WebSocketProvider} from '../src/providers/WebSocketProvider.js';
-import {HttpProvider} from '../src/providers/HttpProvider.js';
+// @ts-ignore
 import {MockProvider} from './MockProvider.js';
 
 describe('GenNet', () => {

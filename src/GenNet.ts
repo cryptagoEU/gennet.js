@@ -1,4 +1,4 @@
-import type {JsonRpcNotification, Provider, ProviderEvent, ProviderEventListener, Subscription, SubscriptionTopic} from './types.js';
+import type {JsonRpcNotification, Provider, ProviderEvent, ProviderEventListener, ReconnectOptions, Subscription, SubscriptionTopic} from './types.js';
 import {HttpProvider} from './providers/HttpProvider.js';
 import {WebSocketProvider} from './providers/WebSocketProvider.js';
 import {Admin} from './namespaces/Admin.js';
@@ -29,6 +29,8 @@ import {Mempool} from './namespaces/Mempool.js';
 export interface GenNetOptions {
     /** JWT-Token für authentifizierte Verbindungen. */
     token?: string;
+    /** WebSocket Reconnect-Optionen. */
+    reconnect?: ReconnectOptions;
 }
 
 export class GenNet {
@@ -124,7 +126,7 @@ export class GenNet {
             const wsUrl = options?.token
                 ? `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(options.token)}`
                 : url;
-            return new WebSocketProvider(wsUrl);
+            return new WebSocketProvider(wsUrl, {reconnect: options?.reconnect});
         }
         if (url.startsWith('http://') || url.startsWith('https://')) {
             return new HttpProvider(url, options?.token);

@@ -25,6 +25,12 @@ import {Mempool} from './namespaces/Mempool.js';
  * gennet.disconnect();
  * ```
  */
+/** Optionen für den GenNet Client. */
+export interface GenNetOptions {
+    /** JWT-Token für authentifizierte Verbindungen. */
+    token?: string;
+}
+
 export class GenNet {
     public readonly admin: Admin;
     public readonly net: Net;
@@ -34,9 +40,9 @@ export class GenNet {
 
     private readonly provider: Provider;
 
-    constructor(providerOrUrl: string | Provider) {
+    constructor(providerOrUrl: string | Provider, options?: GenNetOptions) {
         if (typeof providerOrUrl === 'string') {
-            this.provider = GenNet.createProvider(providerOrUrl);
+            this.provider = GenNet.createProvider(providerOrUrl, options);
         } else {
             this.provider = providerOrUrl;
         }
@@ -112,12 +118,16 @@ export class GenNet {
 
     // ── Private ────────────────────────────────────────────────
 
-    private static createProvider(url: string): Provider {
+    private static createProvider(url: string, options?: GenNetOptions): Provider {
         if (url.startsWith('ws://') || url.startsWith('wss://')) {
-            return new WebSocketProvider(url);
+            // Browser-WebSocket kann keine custom Headers → Token als Query-Parameter
+            const wsUrl = options?.token
+                ? `${url}${url.includes('?') ? '&' : '?'}token=${encodeURIComponent(options.token)}`
+                : url;
+            return new WebSocketProvider(wsUrl);
         }
         if (url.startsWith('http://') || url.startsWith('https://')) {
-            return new HttpProvider(url);
+            return new HttpProvider(url, options?.token);
         }
         throw new Error(`Unbekanntes URL-Schema: ${url} (erwartet: ws://, wss://, http://, https://)`);
     }

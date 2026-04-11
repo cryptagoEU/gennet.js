@@ -43,6 +43,17 @@ await gennet.net.send('0xRecipientAddress', 'Hello!');
 gennet.disconnect();
 ```
 
+## Authentication
+
+For Gennet-Nodes with JWT authentication enabled, pass the token via options:
+
+```typescript
+const gennet = new GenNet('ws://localhost:18789', { token: 'eyJhbGciOi...' });
+await gennet.connect();
+```
+
+Works with both WebSocket and HTTP providers.
+
 ## Providers
 
 gennet.js auto-detects the provider from the URL:

@@ -58,6 +58,7 @@ export interface TransportInfo {
     port?: number;
     api: string[];
     origins?: string[];
+    auth?: boolean;
 }
 
 export interface NodeInfo {

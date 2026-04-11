@@ -1,5 +1,6 @@
 // GenNet.js — Client Library for GenNet
 export {GenNet} from './GenNet.js';
+export type {GenNetOptions} from './GenNet.js';
 
 // Providers
 export {WebSocketProvider} from './providers/WebSocketProvider.js';

@@ -9,9 +9,11 @@ let requestId = 0;
  */
 export class HttpProvider implements Provider {
     private readonly url: string;
+    private readonly token: string | undefined;
 
-    constructor(url: string) {
+    constructor(url: string, token?: string) {
         this.url = url;
+        this.token = token;
     }
 
     get connected(): boolean {
@@ -22,9 +24,14 @@ export class HttpProvider implements Provider {
         const id = ++requestId;
         const body = JSON.stringify({jsonrpc: '2.0', id, method, params});
 
+        const headers: Record<string, string> = {'Content-Type': 'application/json'};
+        if (this.token) {
+            headers['Authorization'] = `Bearer ${this.token}`;
+        }
+
         const res = await fetch(this.url, {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
+            headers,
             body,
         });
 

@@ -1,5 +1,11 @@
 # gennet.js
 
+## 0.3.0
+
+### Minor Changes
+
+- [`c3ec585`](https://github.com/cryptagoEU/gennet.js/commit/c3ec585fa50c7c5f66347b7e46e9876fd3d1c9e0) Thanks [@garbera93](https://github.com/garbera93)! - Add JWT authentication support. GenNet constructor accepts optional `token` option for authenticated connections to nodes with `--authrpc` enabled.
+
 ## 0.2.2
 
 ### Patch Changes

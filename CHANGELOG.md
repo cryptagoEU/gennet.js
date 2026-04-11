@@ -1,5 +1,11 @@
 # gennet.js
 
+## 0.3.1
+
+### Patch Changes
+
+- [`78d0150`](https://github.com/cryptagoEU/gennet.js/commit/78d01505725c1acf50fa2834171ed114b3e91293) Thanks [@garbera93](https://github.com/garbera93)! - Add `reconnect` option to `GenNetOptions` for configuring WebSocket reconnect behavior via the constructor.
+
 ## 0.3.0
 
 ### Minor Changes
